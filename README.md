@@ -124,3 +124,8 @@
 
 Удалить пользователя
 
+# Основные технологии
+
+- [Express](https://www.npmjs.com/package/express)
+- [Prisma](https://www.npmjs.com/package/prisma)
+
