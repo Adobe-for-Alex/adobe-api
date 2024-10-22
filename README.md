@@ -129,3 +129,20 @@
 - [Express](https://www.npmjs.com/package/express)
 - [Prisma](https://www.npmjs.com/package/prisma)
 
+# Как внести свои измменения?
+
+- Форкаешь репозиторий
+- Клонишь свой форк
+- Создаешь отдельную ветку для своиз изменений
+(это важно для избежания гемороя при параллельной разработке нескольких фич)
+- Комитишь изменения в свою ветку
+- Оформляешь Pull Request
+- Если твои изменения исправляют какие-то проблемы из раздела Issue,
+то добавь их номера в описании PR в следующем виде:
+```
+Fixes #1
+Fixes #2
+Fixes #3
+```
+[Почему так стоит делать](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
+
