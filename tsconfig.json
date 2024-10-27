@@ -1,0 +1,7 @@
+{
+  "extends": "@tsconfig/strictest",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  }
+}

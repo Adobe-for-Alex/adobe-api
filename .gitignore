@@ -1,0 +1,12 @@
+# Editors and IDEs
+.vscode/
+.idea/
+
+# Build
+dist/
+
+# Cache
+node_modules/
+
+# Secrets
+.env
