@@ -1,7 +1,7 @@
 {
   "name": "telegram-bot",
   "version": "0.0.0",
-  "description": "Бот для взаимодействия с конечным пользователем. Позволяет оформит подписку на постоянный доступ к аккаунтам с продуктами Adobe (открыть сессию на время действия подписки).",
+  "description": "Это микросервис предоставляющий REST-подобное API для ограниченного фукнционала Adobe",
   "main": "./src/index.ts",
   "scripts": {
     "preinstall": "only-allow pnpm && cp .env.template .env",
