@@ -1,0 +1,76 @@
+name: YouGile Tasks
+on:
+  issues:
+    types: [opened, reopened, closed, edited]
+jobs:
+  create-yougile-task:
+    name: Create task
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+    steps:
+      - id: create-task
+        run: |
+          ID="$(
+          curl -sS --request POST \
+            --url https://ru.yougile.com/api-v2/tasks \
+            --header 'Authorization: Bearer ${{ secrets.YOUGILE_API_KEY }}' \
+            --header 'Content-Type: application/json' \
+            --data '{
+              "title": "${{ github.event.issue.title }}",
+              "columnId": "${{ secrets.YOUGILE_COLUMN_ID }}",
+              "description": "<a href=\"https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}\">Показать в Github</a>"
+            }' | jq -r '.id'
+          )"
+          echo "id=$ID" > $GITHUB_OUTPUT
+      - run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --body "YouGile task ID: \`${{ steps.create-task.outputs.id }}\`"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+  update-complete-status:
+    name: Update complete status
+    if: github.event.action == 'closed' || github.event.action == 'reopened'
+    runs-on: ubuntu-22.04
+    steps:
+      - id: task
+        run: |
+          ID="$(gh issue view ${{ github.event.issue.number }} --comments \
+          | grep 'YouGile task ID' \
+          | sed -E 's/YouGile task ID: `([^`]*)`/\1/g')"
+          echo "id=$ID" > $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - run: |
+          curl --request PUT \
+            --url https://ru.yougile.com/api-v2/tasks/${{ steps.task.outputs.id }} \
+            --header 'Authorization: Bearer ${{ secrets.YOUGILE_API_KEY }}' \
+            --header 'Content-Type: application/json' \
+            --data '{
+              "completed": ${{ github.event.action == 'closed' }}
+            }'
+  update-title:
+    name: Update title
+    if: github.event.action == 'edited'
+    runs-on: ubuntu-22.04
+    steps:
+      - id: task
+        run: |
+          ID="$(gh issue view ${{ github.event.issue.number }} --comments \
+          | grep 'YouGile task ID' \
+          | sed -E 's/YouGile task ID: `([^`]*)`/\1/g')"
+          echo "id=$ID" > $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+      - run: |
+          curl --request PUT \
+            --url https://ru.yougile.com/api-v2/tasks/${{ steps.task.outputs.id }} \
+            --header 'Authorization: Bearer ${{ secrets.YOUGILE_API_KEY }}' \
+            --header 'Content-Type: application/json' \
+            --data '{
+              "title": "${{ github.event.issue.title }}"
+            }'
