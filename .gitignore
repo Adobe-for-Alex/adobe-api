@@ -6,7 +6,6 @@
 dist/
 
 # Examples
-src/examples/
 
 # Cache
 node_modules/
