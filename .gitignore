@@ -5,8 +5,6 @@
 # Build
 dist/
 
-# Examples
-
 # Cache
 node_modules/
 
