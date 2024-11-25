@@ -26,6 +26,11 @@ services:
     image: adminer
     ports:
       - '8000:8080'
+  browser:
+    image: selenium/standalone-chrome:130.0
+    restart: always
+    ports:
+      - 4444:4444
 volumes:
   pgdata:
     driver: local
