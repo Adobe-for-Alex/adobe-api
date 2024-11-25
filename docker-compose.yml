@@ -29,6 +29,8 @@ services:
   browser:
     image: selenium/standalone-chrome:130.0
     restart: always
+    environment:
+        SE_NODE_SESSION_TIMEOUT: 120
     ports:
       - 4444:4444
 volumes:
