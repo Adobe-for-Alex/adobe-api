@@ -2,8 +2,7 @@ import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
 import { COMPRESSION_LEVEL, zip } from "zip-a-folder"
 import { Options } from "selenium-webdriver/chrome"
-
-export type Token = string
+import { Token } from "./aliases"
 
 class Eyes {
   private index = 0
