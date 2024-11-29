@@ -131,7 +131,10 @@ app.post('/users', expressAsyncHandler(async (req, res) => {
     return
   }
 
-  const token = await registerOrLogin(selenium, email, password)
+  if (!await prisma.user.findFirst({ where: { email } })) {
+    const token = await registerOrLogin(selenium, email, password)
+    await prisma.user.create({ data: { email, password, token } })
+  }
 
   await updateAdminTokens(selenium, prisma)
 
@@ -146,7 +149,7 @@ app.post('/users', expressAsyncHandler(async (req, res) => {
     return
   }
   await attach({ ...selection, email })
-  await prisma.user.create({ data: { email, password, token, adminId: admin.email } })
+  await prisma.attach.create({ data: { userId: email, adminId: admin.email } })
   res.sendStatus(201)
 }))
 
@@ -165,10 +168,7 @@ app.delete('/users/:email', expressAsyncHandler(async (req, res) => {
     res.status(400).send('Invalid email')
     return
   }
-  const user = await prisma.user.findFirst({
-    where: { email, deleted: false },
-    include: { admin: true }
-  })
+  const user = await prisma.user.findFirst({ where: { email, deleted: false } })
   if (!user) {
     res.status(404).send('Not found user')
     return
@@ -177,6 +177,7 @@ app.delete('/users/:email', expressAsyncHandler(async (req, res) => {
     where: { email },
     data: { deleted: true }
   })
+  await updateAdminTokens(selenium, prisma)
   const selection = await findUser(
     (await prisma.admin.findMany({ where: { deleted: false } }))
       .map(x => x.token),

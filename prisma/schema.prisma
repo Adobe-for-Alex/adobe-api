@@ -21,7 +21,7 @@ model Admin {
   deleted   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User[]
+  users     Attach[]
 }
 
 model User {
@@ -29,8 +29,16 @@ model User {
   password  String
   token     String
   deleted   Boolean  @default(false)
-  adminId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  attach    Attach?
+}
+
+model Attach {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  adminId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [email])
   admin     Admin    @relation(fields: [adminId], references: [email])
 }
