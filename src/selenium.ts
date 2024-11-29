@@ -1,6 +1,5 @@
 import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
-import { COMPRESSION_LEVEL, zip } from "zip-a-folder"
 import { Options } from "selenium-webdriver/chrome"
 import { Token } from "./aliases"
 
@@ -12,17 +11,14 @@ class Eyes {
   ) { }
   async look() {
     const id = this.index++
-    console.log(`Taking screenshot ${id}...`)
+    const formatter = new Intl.NumberFormat('en-US', { minimumIntegerDigits: 2 })
+    const filename = `${this.directory}/${formatter.format(id)}.png`
+    console.log(`Taking screenshot ${filename}...`)
     const screenshot = await this.browser.takeScreenshot()
-    console.log(`Saving screenshot ${id}...`)
+    console.log(`Saving screenshot ${filename}...`)
     try { await fs.access(this.directory) }
     catch { await fs.mkdir(this.directory, { recursive: true }) }
-    const formatter = new Intl.NumberFormat('en-US', { minimumIntegerDigits: 2 })
-    await fs.writeFile(`${this.directory}/${formatter.format(id)}.png`, screenshot, { encoding: 'base64' })
-  }
-  async archive() {
-    await zip(this.directory, `${this.directory}.zip`, { compression: COMPRESSION_LEVEL.high })
-    await fs.rm(this.directory, { recursive: true, force: true })
+    await fs.writeFile(filename, screenshot, { encoding: 'base64' })
   }
 }
 
@@ -32,9 +28,8 @@ export default class Selenium {
   ) { }
 
   async login(email: string, password: string): Promise<Token> {
-    const browser = await this.browser()
-    const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-login-${email}`, browser)
-    try {
+    return await this.inSession(async browser => {
+      const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-login-${email}`, browser)
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
@@ -72,15 +67,12 @@ export default class Selenium {
       await browser.wait(until.elementLocated(By.css('button')))
       await eyes.look()
       return await this.extractToken(browser)
-    } finally {
-      await Promise.all([browser.quit(), eyes.archive()])
-    }
+    })
   }
 
   async register(email: string, password: string): Promise<Token> {
-    const browser = await this.browser()
-    const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-register-${email}`, browser)
-    try {
+    return await this.inSession(async browser => {
+      const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-register-${email}`, browser)
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
@@ -103,7 +95,7 @@ export default class Selenium {
       await continueButton.click()
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-FirstNameField"]')))
+      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-FirstNameField"]')), 10000)
       await eyes.look()
       const firstNameInput = await browser.findElement(By.css('*[data-id="Signup-FirstNameField"]'))
       const lastNameInput = await browser.findElement(By.css('*[data-id="Signup-LastNameField"]'))
@@ -117,8 +109,20 @@ export default class Selenium {
       await browser.wait(until.elementLocated(By.css('button')))
       await eyes.look()
       return await this.extractToken(browser)
+    })
+  }
+
+  private async inSession<T>(script: (browser: WebDriver) => Promise<T>): Promise<T> {
+    const browser = await this.browser()
+    const timeout = setTimeout(async () => {
+      console.warn('Browser session timedout')
+      await browser.quit()
+    }, 2 * 60 * 1000)
+    try {
+      return await script(browser)
     } finally {
-      await Promise.all([browser.quit(), eyes.archive()])
+      clearTimeout(timeout)
+      await browser.quit()
     }
   }
 
@@ -132,9 +136,6 @@ export default class Selenium {
       .setChromeOptions(options)
       .usingServer(this.serverUrl.toString())
       .build()
-    browser.manage().setTimeouts({
-      implicit: 10_000,
-    })
     return browser
   }
 
@@ -157,16 +158,16 @@ export default class Selenium {
       },
       body: JSON.stringify({ address, password })
     }).then(x => x.json()).then(x => x.token)
-    let tries = 3
+    let tries = 10
     while (tries--) {
-      const lastMessage: { id: string, seen: boolean, intro: string } = await fetch('https://api.mail.tm/messages', {
+      const lastMessage: { id: string, seen: boolean, intro: string } | undefined = await fetch('https://api.mail.tm/messages', {
         headers: {
           'Authorization': `Bearer ${mailToken}`,
           'Content-Type': 'application/json',
         }
       }).then(x => x.json()).then(x => x['hydra:member'][0])
       console.log('lastMessage', lastMessage)
-      if (lastMessage?.seen) {
+      if (!lastMessage || lastMessage.seen) {
         await new Promise(r => setTimeout(r, 3000))
         continue
       }
