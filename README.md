@@ -27,80 +27,32 @@ $ pnpm dev
 
 # REST API
 
-## GET `/boards`
+## POST `/admin`
 
-Получить список ID всех зарегистрированных в микросервисе досок,
-на которых еще доступна подписка
+Добавить уже зарегистрированного админа с панелью
 
-### Response
-
-```json
-[
-  "some-internal-board-id-1",
-  "some-internal-board-id-2",
-  "some-internal-board-id-3"
-]
+### Headers
+```
+Content-Type: application/json
 ```
 
-## POST `/boards`
-
-Зарегистрировать новую доску в микросервисе
-
 ### Body
-
-> [!WARNING]
-> Пока точно не известно, какие данные нужны для управления конкретной доской,
-> поэтому этот раздел будет изменем в будущем
 
 ```json
 {
   "email": "board-owner-email",
-  "password": "board-owner-password",
-  "something": "else"
+  "password": "board-owner-password"
 }
 ```
-
-### Response
-
-```json
-"some-internal-board-id"
-```
-
-## GET `/boards/{id}`
-
-Получить информацию по конкретной доске
-
-> [!WARNING]
-> Информация выдается даже по доске, накоторой нет подписки
-
-### Response
-
-```json
-{
-  "id": "some-internal-board-id",
-  "subscription": true,
-  "user_limit": 5,
-  "users": [
-    "some-internal-user-id-1",
-    "some-internal-user-id-2",
-    "some-internal-user-id-3",
-    "some-internal-user-id-4",
-    "some-internal-user-id-5"
-  ]
-}
-```
-
-> [!NOTE]
-> `"user_limit"` - количество свободных мест на доске.
-> К доске можно подключить ограниченно количество пользователей
-
-## DELETE `/boards/{id}`
-
-Удалить доску
 
 ## POST `/users`
 
 Создать пользователя
+
+### Headers
+```
+Content-Type: application/json
+```
 
 ### Body
 
@@ -117,7 +69,7 @@ $ pnpm dev
 "some-internal-user-id"
 ```
 
-## GET `/users/{id}`
+## GET `/users/{email}`
 
 Получить информацию о пользователе
 
@@ -125,24 +77,16 @@ $ pnpm dev
 
 ```json
 {
-  "id": "some-internal-user-id",
   "email": "user-email",
   "password": "user-password",
-  "board": "some-internal-board-id"
+  "token": "euJ...GgH",
+  "deleted": true,
+  "createdAt": "2024-11-29T00:52:03.462Z",
+  "updatedAt": "2024-11-29T00:52:58.656Z"
 }
 ```
 
-## PUT `/users/{id}`
-
-### Body
-
-```json
-{
-  "board": "some-new-internal-board-id"
-}
-```
-
-## DELETE `/users/{id}`
+## DELETE `/users/{email}`
 
 Удалить пользователя
 
