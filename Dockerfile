@@ -18,4 +18,5 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 COPY prisma prisma
 COPY --from=builder /app/dist dist
 RUN pnpm install --production --ignore-scripts
+RUN pnpx prisma generate
 CMD pnpm prisma:deploy && pnpm start:production
