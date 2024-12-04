@@ -165,6 +165,9 @@ export default class Selenium {
   }
 
   private async getMailCode(address: string, password: string): Promise<string> {
+    const timeGap = new Date(1000)
+    const timeEdge = new Date(+new Date() - +timeGap)
+    console.log('Email', address, 'Time edge', timeEdge)
     console.log('Email', address, 'Get mail.tm token')
     const mailToken = await fetch('https://api.mail.tm/token', {
       method: 'POST',
@@ -175,14 +178,19 @@ export default class Selenium {
     }).then(x => x.json()).then(x => x.token)
     let tries = 10
     while (tries--) {
-      const lastMessage: { id: string, seen: boolean, intro: string } | undefined = await fetch('https://api.mail.tm/messages', {
+      const lastMessage: {
+        id: string,
+        seen: boolean,
+        intro: string,
+        createdAt: string
+      } | undefined = await fetch('https://api.mail.tm/messages', {
         headers: {
           'Authorization': `Bearer ${mailToken}`,
           'Content-Type': 'application/json',
         }
       }).then(x => x.json()).then(x => x['hydra:member'][0])
       console.log('lastMessage', lastMessage)
-      if (!lastMessage || lastMessage.seen) {
+      if (!lastMessage || lastMessage.seen || (new Date(lastMessage.createdAt) < timeEdge)) {
         await new Promise(r => setTimeout(r, 3000))
         continue
       }
