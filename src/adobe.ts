@@ -1,4 +1,5 @@
 import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './aliases'
+import fs from 'fs/promises'
 
 export type Organization = {
   id: OrientationType
@@ -41,20 +42,32 @@ export const organizations = async (token: Token): Promise<Organization[]> => {
   throw new Error(`Failed to get organization: ${response.status} ${response.statusText} ${JSON.stringify(data)}`)
 }
 
-export const products = async (token: Token, id: OrganizationId): Promise<Product[]> =>
-  (await fetch(`https://bps-il.adobe.io/jil-api/v2/organizations/${id}/products/?include_cancellation_data=true&include_created_date=true&include_expired=true&include_groups_quantity=false&include_inactive=false&include_license_activations=true&include_license_allocation_info=false&include_pricing_data=true&includeAcquiredOfferIds=false&includeConfiguredProductArrangementId=false&includeLegacyLSFields=false&processing_instruction_codes=global_administration%2Cadministration`, {
+export const products = async (token: Token, id: OrganizationId): Promise<Product[]> => {
+  const data = (await fetch(`https://bps-il.adobe.io/jil-api/v2/organizations/${id}/products/?include_cancellation_data=true&include_created_date=true&include_expired=true&include_groups_quantity=false&include_inactive=false&include_license_activations=true&include_license_allocation_info=false&include_pricing_data=true&includeAcquiredOfferIds=false&includeConfiguredProductArrangementId=false&includeLegacyLSFields=false&processing_instruction_codes=global_administration%2Cadministration`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Api-Key': 'ONESIE1',
     }
   }).then(x => x.json()))
-    .filter((x: any) => x.pricePoint === 'TRIAL_14_DAY_TWP_TEAM_DIRECT_CCT_ALL_APPS_COM')
-    .map((x: any): Product => ({
-      id: x.id,
-      maxDelegations: x.cancellation.cancellableQuantity,
-      delegations: x.cancellation.remainingDelegations,
-      actual: (+new Date() - Date.parse(x.createdDate)) < (14 * 24 * 3600 * 1000)
-    }))
+
+  try {
+    return data.filter((x: any) => x.pricePoint === 'TRIAL_14_DAY_TWP_TEAM_DIRECT_CCT_ALL_APPS_COM')
+      .map((x: any): Product => ({
+        id: x.id,
+        maxDelegations: x.licenseQuantities.find((x: any) => x.quantity !== undefined)?.quantity || 0,
+        delegations: x.assignedQuantity,
+        actual: (+new Date() - Date.parse(x.createdDate)) < (14 * 24 * 3600 * 1000)
+      }))
+  } catch (e) {
+    const directory = './log/users'
+    const filename = `${directory}/${new Date().toISOString()}.json`
+    console.error('Got unexpected products. JSON saved to', filename)
+    try { await fs.access(directory) }
+    catch { await fs.mkdir(directory, { recursive: true }) }
+    await fs.writeFile(filename, JSON.stringify(data, undefined, 2))
+    throw e
+  }
+}
 
 export const users = async (token: Token, organizationId: OrganizationId, productId: ProductId): Promise<User[]> =>
   (await fetch(`https://bps-il.adobe.io/jil-api/v2/organizations/${organizationId}/products/${productId}/users?filter_exclude_domain=techacct.adobe.com&include=PROVISIONING_STATUS&page=0&page_size=20&search_query=&sort=FNAME_LNAME&sort_order=ASC&currentPage=1&filterQuery=`, {
