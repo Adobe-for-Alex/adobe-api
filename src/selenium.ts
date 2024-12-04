@@ -41,19 +41,34 @@ export default class Selenium {
       await eyes.look()
       await browser.wait(until.stalenessOf(emailInput))
       if (await browser.findElements(By.id('PasswordPage-PasswordField')).then(x => x.length) == 0) {
-        await eyes.look()
-        const nextButton = await browser.findElement(By.css('.CardLayout .spectrum-Button'))
-        await nextButton.click()
+        let mailCodeTries = 2
+        while (mailCodeTries--) {
+          await eyes.look()
+          const nextButton = await browser.findElement(By.css('.CardLayout .spectrum-Button'))
+          await nextButton.click()
 
-        if (await browser.findElements(By.css('*[data-id="ErrorPage-Title"]')).then(x => x.length) > 0)
-          throw new Error('New emails temporary deny')
-        const code = await this.getMailCode(email, password)
+          if (await browser.findElements(By.css('*[data-id="ErrorPage-Title"]')).then(x => x.length) > 0)
+            throw new Error('New emails temporary deny')
+          let code: string | undefined = undefined
+          try {
+            code = await this.getMailCode(email, password)
+          } catch {
+            await eyes.look()
+            const resendButton = await browser.findElement(By.css('*[data-id="ChallengeCodePage-Resend"]'))
+            await resendButton.click()
+            continue
+          }
 
-        await eyes.look()
-        await browser.wait(until.elementLocated(By.css('*[data-id="CodeInput-0"]')))
-        await eyes.look()
-        const codeInput = await browser.findElement(By.css('*[data-id="CodeInput-0"]'))
-        await codeInput.sendKeys(code)
+          await eyes.look()
+          await browser.wait(until.elementLocated(By.css('*[data-id="CodeInput-0"]')))
+          await eyes.look()
+          const codeInput = await browser.findElement(By.css('*[data-id="CodeInput-0"]'))
+          await codeInput.sendKeys(code)
+          break
+        }
+        if (mailCodeTries < 0) {
+          throw new Error('Failed to get mail code')
+        }
       }
 
       await eyes.look()
