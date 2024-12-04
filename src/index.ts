@@ -1,8 +1,8 @@
 import expressAsyncHandler from 'express-async-handler'
 import Selenium from './selenium'
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
-import { attach, detach, licenseGroups, organizations, products, users } from './adobe'
+import { Admin, PrismaClient } from '@prisma/client'
+import { attach, detach, licenseGroups, organizations, products, User, users } from './adobe'
 import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './aliases'
 
 const SELENIUM_SERVER = process.env['SELENIUM_SERVER']
@@ -104,6 +104,19 @@ const updateAdminTokens = async (selenium: Selenium, prisma: PrismaClient): Prom
   }
 }
 
+const collectUsers = async (admins: Admin[]): Promise<User[]> => {
+  let allUsers: User[] = []
+  for (const { token, email } of admins) {
+    console.log('Collect users from panel', email)
+    for (const organization of await organizations(token)) {
+      for (const product of await products(token, organization.id)) {
+        allUsers = [...allUsers, ...await users(token, organization.id, product.id)]
+      }
+    }
+  }
+  return allUsers
+}
+
 app.post('/admin', expressAsyncHandler(async (req, res) => {
   console.log(req.body)
   const { email, password } = req.body
@@ -189,6 +202,18 @@ app.delete('/users/:email', expressAsyncHandler(async (req, res) => {
   }
   await detach(selection)
   res.sendStatus(204)
+}))
+
+app.post('/users/check', expressAsyncHandler(async (_, res) => {
+  await updateAdminTokens(selenium, prisma)
+  const actualUsers = await collectUsers(await prisma.admin.findMany({ where: { deleted: false } }))
+  const storedUsers = await prisma.user.findMany({ where: { deleted: false } })
+  const fallenUsers = storedUsers.filter(x => !actualUsers.find(y => x.email === y.email))
+  await prisma.user.updateMany({
+    where: { email: { in: fallenUsers.map(x => x.email) } },
+    data: { deleted: true }
+  })
+  res.send(fallenUsers)
 }))
 
 app.listen(8080, () => console.log('Server started'))
