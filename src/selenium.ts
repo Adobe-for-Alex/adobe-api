@@ -20,6 +20,10 @@ class Eyes {
     catch { await fs.mkdir(this.directory, { recursive: true }) }
     await fs.writeFile(filename, screenshot, { encoding: 'base64' })
   }
+  async drop() {
+    console.log(`Drop ${this.directory}`)
+    await fs.rm(this.directory, { recursive: true, force: true })
+  }
 }
 
 export default class Selenium {
@@ -28,8 +32,7 @@ export default class Selenium {
   ) { }
 
   async login(email: string, password: string): Promise<Token> {
-    return await this.inSession(async browser => {
-      const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-login-${email}`, browser)
+    return await this.inSession(`./screenshots/${new Date().toISOString()}-login-${email}`, async (browser, eyes) => {
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
@@ -86,8 +89,7 @@ export default class Selenium {
   }
 
   async register(email: string, password: string): Promise<Token> {
-    return await this.inSession(async browser => {
-      const eyes = new Eyes(`./screenshots/${new Date().toISOString()}-register-${email}`, browser)
+    return await this.inSession(`./screenshots/${new Date().toISOString()}-register-${email}`, async (browser, eyes) => {
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
@@ -127,14 +129,18 @@ export default class Selenium {
     })
   }
 
-  private async inSession<T>(script: (browser: WebDriver) => Promise<T>): Promise<T> {
+  private async inSession<T>(screenshotsDirectory: string, script: (browser: WebDriver, eyes: Eyes) => Promise<T>): Promise<T> {
     const browser = await this.browser()
+    const eyes = new Eyes(screenshotsDirectory, browser)
     const timeout = setTimeout(async () => {
       console.warn('Browser session timedout')
+      await eyes.look()
       await browser.quit()
     }, 2 * 60 * 1000)
     try {
-      return await script(browser)
+      const result = await script(browser, eyes)
+      await eyes.drop()
+      return result
     } finally {
       clearTimeout(timeout)
       await browser.quit()
