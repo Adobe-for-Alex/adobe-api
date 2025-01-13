@@ -81,6 +81,15 @@ export default class Selenium {
       await passwordInput.sendKeys(password, Key.ENTER)
 
       await eyes.look()
+      await browser.wait(until.stalenessOf(passwordInput))
+      while ((await browser.findElements(By.css('*[data-id$="-skip-btn"]'))).length > 0) {
+        await eyes.look()
+        const skipButton = await browser.findElement(By.css('*[data-id$="-skip-btn"]'))
+        await skipButton.click()
+        await browser.wait(until.stalenessOf(skipButton))
+      }
+      await eyes.look()
+
       await browser.wait(until.urlContains('https://adminconsole.adobe.com'))
       await browser.wait(until.elementLocated(By.css('button')))
       await eyes.look()
@@ -136,11 +145,14 @@ export default class Selenium {
       console.warn('Browser session timedout')
       await eyes.look()
       await browser.quit()
-    }, 2 * 60 * 1000)
+    }, 15 * 60 * 1000)
     try {
       const result = await script(browser, eyes)
       await eyes.drop()
       return result
+    } catch (e) {
+      await eyes.look()
+      throw e
     } finally {
       clearTimeout(timeout)
       await browser.quit()
@@ -152,11 +164,18 @@ export default class Selenium {
     options.setUserPreferences({
       'profile.default_content_setting_values.images': 2
     })
+    options.addArguments(
+      '--window-size=1920,1080',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-infobars',
+      '--disable-automation',
+    )
     const browser = new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
       .usingServer(this.serverUrl.toString())
       .build()
+    await browser.executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     return browser
   }
 
