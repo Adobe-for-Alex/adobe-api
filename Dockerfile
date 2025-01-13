@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine3.20 AS base
 RUN npm install --global pnpm
 WORKDIR /app
 EXPOSE 8080
