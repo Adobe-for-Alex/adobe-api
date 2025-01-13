@@ -2,7 +2,8 @@ services:
   server:
     build:
       context: .
-      target: develop
+      target: ${TARGET:develop}
+    image: ${IMAGE:adobe-api}
     stdin_open: true
     tty: true
     ports:

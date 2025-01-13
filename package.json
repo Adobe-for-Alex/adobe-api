@@ -15,7 +15,8 @@
     "dev:down": "docker compose down",
     "start:develop": "nodemon --signal SIGINT -r dotenv/config ./src/index.ts",
     "start:production": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "deploy": "TARGET=production docker compose build && docker compose push"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
