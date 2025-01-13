@@ -77,14 +77,6 @@ const persistentLogin = async (selenium: Selenium, email: string, password: stri
   throw new Error(`Failed to login ${email}`)
 }
 
-const registerOrLogin = async (selenium: Selenium, email: string, password: string): Promise<Token> => {
-  try {
-    return await selenium.register(email, password)
-  } catch {
-    return await persistentLogin(selenium, email, password)
-  }
-}
-
 const updateAdminTokens = async (selenium: Selenium, prisma: PrismaClient): Promise<void> => {
   const maxOld = new Date()
   maxOld.setHours(maxOld.getHours() - 6)
@@ -145,7 +137,7 @@ app.post('/users', expressAsyncHandler(async (req, res) => {
   }
 
   if (!await prisma.user.findFirst({ where: { email } })) {
-    const token = await registerOrLogin(selenium, email, password)
+    const token = await selenium.register(email, password)
     await prisma.user.create({ data: { email, password, token } })
   }
 
