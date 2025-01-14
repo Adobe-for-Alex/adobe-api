@@ -120,12 +120,11 @@ const collectDelegationsCount = async (tokens: Token[]) => {
             console.log(`Organization ${organization.id} Product ${product.id} is not delegations`)
             return []
           }
-          if (product.delegations >= product.maxDelegations) {
-            console.log(`Organization ${organization.id} Product ${product.id} has no delegations`)
+          const licenseGroup = (await licenseGroups(token, organization.id, product.id))[0]
+          if (!licenseGroup) {
+            console.log(`Organization ${organization.id} Product ${product.id} has no license`)
             return []
           }
-          const licenseGroup = (await licenseGroups(token, organization.id, product.id))[0]
-          if (!licenseGroup) return []
           console.log(`Organization ${organization.id} Product ${product.id} has ${product.maxDelegations - product.delegations} delegations`)
           return [{
             free: product.maxDelegations - product.delegations,
