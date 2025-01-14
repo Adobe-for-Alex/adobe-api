@@ -4,6 +4,7 @@ import express from 'express'
 import { Admin, PrismaClient } from '@prisma/client'
 import { attach, detach, licenseGroups, organizations, products, User, users } from './adobe'
 import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './aliases'
+import cron from 'node-cron'
 
 const SELENIUM_SERVER = process.env['SELENIUM_SERVER']
 if (!SELENIUM_SERVER) throw new Error('SELENIUM_SERVER is undefined')
@@ -108,6 +109,57 @@ const collectUsers = async (admins: Admin[]): Promise<User[]> => {
   }
   return allUsers
 }
+
+const collectDelegationsCount = async (tokens: Token[]) => {
+  return (await Promise.all(
+    tokens.map(async token => await Promise.all(
+      (await organizations(token)).map(async organization => await Promise.all(
+        (await products(token, organization.id)).map(async product => {
+          if (!product.actual) {
+            console.log(`Organization ${organization.id} Product ${product.id} is not delegations`)
+            return []
+          }
+          if (product.delegations >= product.maxDelegations) {
+            console.log(`Organization ${organization.id} Product ${product.id} has no delegations`)
+            return []
+          }
+          const licenseGroup = (await licenseGroups(token, organization.id, product.id))[0]
+          if (!licenseGroup) return []
+          console.log(`Organization ${organization.id} Product ${product.id} has ${product.maxDelegations - product.delegations} delegations`)
+          return [{
+            free: product.maxDelegations - product.delegations,
+            total: product.maxDelegations
+          }]
+        })
+      ))
+    ))
+  )).flat(3).reduce((a, b) => ({
+    free: a.free + b.free,
+    total: a.total + b.total
+  }))
+}
+
+let checkFreePlacesIsRunning = false
+cron.schedule('*/30 * * * *', async () => {
+  if (checkFreePlacesIsRunning) {
+    console.log('Try to start check free places process ignored because old process still running')
+    return
+  }
+  console.log('Start check free places process')
+  try {
+    console.log('Check free places: Update admin tokens')
+    await updateAdminTokens(selenium, prisma)
+
+    const tokens = (await prisma.admin.findMany({ where: { deleted: false } }))
+      .map(x => x.token)
+    const delegations = await collectDelegationsCount(tokens)
+    console.log('Check free places: Delegations', delegations)
+  } catch (e) {
+    console.error('Check free places: Failed', e)
+  } finally {
+    checkFreePlacesIsRunning = false
+  }
+})
 
 app.post('/admin', expressAsyncHandler(async (req, res) => {
   console.log(req.body)
