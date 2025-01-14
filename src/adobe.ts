@@ -54,7 +54,7 @@ export const products = async (token: Token, id: OrganizationId): Promise<Produc
     return data.filter((x: any) => x.pricePoint === 'TRIAL_14_DAY_TWP_TEAM_DIRECT_CCT_ALL_APPS_COM')
       .map((x: any): Product => ({
         id: x.id,
-        maxDelegations: x.licenseQuantities.find((x: any) => x.quantity !== undefined)?.quantity || 0,
+        maxDelegations: +(x.licenseQuantities.find((x: any) => x.quantity !== undefined)?.quantity || 0),
         delegations: x.assignedQuantity,
         actual: (+new Date() - Date.parse(x.createdDate)) < (14 * 24 * 3600 * 1000)
       }))
