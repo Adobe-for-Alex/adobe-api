@@ -8,6 +8,7 @@ import cron from 'node-cron'
 
 const SELENIUM_SERVER = process.env['SELENIUM_SERVER']
 if (!SELENIUM_SERVER) throw new Error('SELENIUM_SERVER is undefined')
+const PLACE_COUNT_NOTIFICATIONS_FREQ = process.env['PLACE_COUNT_NOTIFICATIONS_FREQ'] || '*/30 * * * *'
 
 const selenium = new Selenium(new URL(SELENIUM_SERVER))
 const prisma = new PrismaClient()
@@ -145,7 +146,7 @@ if (notificationsConsumers.length == 0) {
 } else {
   console.log('Start check free places process enabled')
   let checkFreePlacesIsRunning = false
-  cron.schedule('*/30 * * * *', async () => {
+  cron.schedule(PLACE_COUNT_NOTIFICATIONS_FREQ, async () => {
     if (checkFreePlacesIsRunning) {
       console.log('Try to start check free places process ignored because old process still running')
       return
