@@ -139,27 +139,49 @@ const collectDelegationsCount = async (tokens: Token[]) => {
   }))
 }
 
-let checkFreePlacesIsRunning = false
-cron.schedule('*/30 * * * *', async () => {
-  if (checkFreePlacesIsRunning) {
-    console.log('Try to start check free places process ignored because old process still running')
-    return
-  }
-  console.log('Start check free places process')
-  try {
-    console.log('Check free places: Update admin tokens')
-    await updateAdminTokens(selenium, prisma)
+const notificationsConsumers = (process.env['PLACE_COUNT_NOTIFICATIONS_URLS'] || '').split(';')
+if (notificationsConsumers.length == 0) {
+  console.log('Start check free process disabled because PLACE_COUNT_NOTIFICATIONS_URLS has no consumers')
+} else {
+  console.log('Start check free places process enabled')
+  let checkFreePlacesIsRunning = false
+  cron.schedule('*/30 * * * *', async () => {
+    if (checkFreePlacesIsRunning) {
+      console.log('Try to start check free places process ignored because old process still running')
+      return
+    }
+    console.log('Start check free places process')
+    try {
+      console.log('Check free places: Update admin tokens')
+      await updateAdminTokens(selenium, prisma)
 
-    const tokens = (await prisma.admin.findMany({ where: { deleted: false } }))
-      .map(x => x.token)
-    const delegations = await collectDelegationsCount(tokens)
-    console.log('Check free places: Delegations', delegations)
-  } catch (e) {
-    console.error('Check free places: Failed', e)
-  } finally {
-    checkFreePlacesIsRunning = false
-  }
-})
+      const tokens = (await prisma.admin.findMany({ where: { deleted: false } }))
+        .map(x => x.token)
+      const delegations = await collectDelegationsCount(tokens)
+      console.log('Check free places: Delegations', delegations)
+
+      await Promise.all(notificationsConsumers.map(async url => {
+        try {
+          console.log(`Check free places: Send notification to ${url}`)
+          await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(delegations)
+          })
+        } catch (e) {
+          console.error(`Check free places: Failed to send notification to ${url}`, e)
+        }
+      }))
+
+    } catch (e) {
+      console.error('Check free places: Failed', e)
+    } finally {
+      checkFreePlacesIsRunning = false
+    }
+  })
+}
 
 app.post('/admin', expressAsyncHandler(async (req, res) => {
   console.log(req.body)
