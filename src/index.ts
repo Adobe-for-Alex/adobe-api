@@ -6,9 +6,14 @@ import { attach, detach, licenseGroups, organizations, products, User, users } f
 import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './aliases'
 import cron from 'node-cron'
 import { loadConfig } from './config'
+import { inspect } from 'util'
 
 const config = loadConfig()
-console.log('Config', config)
+console.log('Config', inspect(config, {
+  depth: 42,
+  colors: true,
+  numericSeparator: true
+}))
 
 const selenium = new Selenium(config.seleniumServer)
 const prisma = new PrismaClient()

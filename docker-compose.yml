@@ -11,6 +11,8 @@ services:
     environment:
       DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@database/${DATABASE_NAME}?schema=public
       SELENIUM_SERVER: http://browser:4444/wd/hub
+      PLACE_COUNT_NOTIFICATIONS_FREQ: '*/10 * * * *'
+      PLACE_COUNT_NOTIFICATIONS_URLS: http://consumer1;http://consumer2;http://consumer3
     volumes:
       - .:/app
   database:
