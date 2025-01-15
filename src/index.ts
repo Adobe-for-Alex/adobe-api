@@ -5,12 +5,17 @@ import { Admin, PrismaClient } from '@prisma/client'
 import { attach, detach, licenseGroups, organizations, products, User, users } from './adobe'
 import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './aliases'
 import cron from 'node-cron'
+import { loadConfig } from './config'
+import { inspect } from 'util'
 
-const SELENIUM_SERVER = process.env['SELENIUM_SERVER']
-if (!SELENIUM_SERVER) throw new Error('SELENIUM_SERVER is undefined')
-const PLACE_COUNT_NOTIFICATIONS_FREQ = process.env['PLACE_COUNT_NOTIFICATIONS_FREQ'] || '*/30 * * * *'
+const config = loadConfig()
+console.log('Config', inspect(config, {
+  depth: 42,
+  colors: true,
+  numericSeparator: true
+}))
 
-const selenium = new Selenium(new URL(SELENIUM_SERVER))
+const selenium = new Selenium(config.seleniumServer)
 const prisma = new PrismaClient()
 const app = express().use(express.json())
 
@@ -139,13 +144,13 @@ const collectDelegationsCount = async (tokens: Token[]) => {
   }))
 }
 
-const notificationsConsumers = (process.env['PLACE_COUNT_NOTIFICATIONS_URLS'] || '').split(';')
-if (notificationsConsumers.length == 0) {
-  console.log('Start check free process disabled because PLACE_COUNT_NOTIFICATIONS_URLS has no consumers')
+if (!config.placeCountNotification) {
+  console.log('Start check free process disabled because config.placeCountNotification is undefined')
 } else {
+  const placeCountNotification = config.placeCountNotification
   console.log('Start check free places process enabled')
   let checkFreePlacesIsRunning = false
-  cron.schedule(PLACE_COUNT_NOTIFICATIONS_FREQ, async () => {
+  cron.schedule(placeCountNotification.freq, async () => {
     if (checkFreePlacesIsRunning) {
       console.log('Try to start check free places process ignored because old process still running')
       return
@@ -160,7 +165,7 @@ if (notificationsConsumers.length == 0) {
       const delegations = await collectDelegationsCount(tokens)
       console.log('Check free places: Delegations', delegations)
 
-      await Promise.all(notificationsConsumers.map(async url => {
+      await Promise.all(placeCountNotification.consumers.map(async url => {
         try {
           console.log(`Check free places: Send notification to ${url}`)
           await fetch(url, {
