@@ -121,27 +121,18 @@ const collectDelegationsCount = async (tokens: Token[]) => {
     tokens.map(async token => await Promise.all(
       (await organizations(token)).map(async organization => await Promise.all(
         (await products(token, organization.id)).map(async product => {
-          if (!product.actual) {
-            console.log(`Organization ${organization.id} Product ${product.id} is not delegations`)
-            return []
-          }
-          const licenseGroup = (await licenseGroups(token, organization.id, product.id))[0]
-          if (!licenseGroup) {
-            console.log(`Organization ${organization.id} Product ${product.id} has no license`)
-            return []
-          }
           console.log(`Organization ${organization.id} Product ${product.id} has ${product.maxDelegations - product.delegations} delegations`)
-          return [{
+          return {
             free: product.maxDelegations - product.delegations,
             total: product.maxDelegations
-          }]
+          }
         })
       ))
     ))
   )).flat(3).reduce((a, b) => ({
     free: a.free + b.free,
     total: a.total + b.total
-  }))
+  }), { free: 0, total: 0 })
 }
 
 if (!config.placeCountNotification) {
