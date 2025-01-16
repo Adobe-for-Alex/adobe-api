@@ -271,10 +271,6 @@ app.post('/users/check', expressAsyncHandler(async (_, res) => {
   const actualUsers = await collectUsers(await prisma.admin.findMany({ where: { deleted: false } }))
   const storedUsers = await prisma.user.findMany({ where: { deleted: false } })
   const fallenUsers = storedUsers.filter(x => !actualUsers.find(y => x.email === y.email))
-  await prisma.user.updateMany({
-    where: { email: { in: fallenUsers.map(x => x.email) } },
-    data: { deleted: true }
-  })
   res.send(fallenUsers)
 }))
 
