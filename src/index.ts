@@ -15,7 +15,7 @@ console.log('Config', inspect(config, {
   numericSeparator: true
 }))
 
-const selenium = new Selenium(config.seleniumServer)
+const selenium = new Selenium(config.seleniumServer, config.proxyList)
 const prisma = new PrismaClient()
 const app = express().use(express.json())
 
