@@ -29,6 +29,7 @@ class Eyes {
 export default class Selenium {
   constructor(
     public readonly serverUrl: URL,
+    public readonly proxyList: URL
   ) { }
 
   async login(email: string, password: string): Promise<Token> {
@@ -160,6 +161,8 @@ export default class Selenium {
   }
 
   private async browser(): Promise<WebDriver> {
+    const proxy = await this.chooseProxy()
+    console.log('Proxy used for new browser:', proxy)
     const options = new Options()
     options.setUserPreferences({
       'profile.default_content_setting_values.images': 2
@@ -170,6 +173,11 @@ export default class Selenium {
       '--disable-infobars',
       '--disable-automation',
     )
+    options.setProxy({
+      proxyType: 'manual',
+      httpProxy: proxy,
+      sslProxy: proxy
+    })
     const browser = new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
@@ -234,5 +242,18 @@ export default class Selenium {
       return match[0]
     }
     throw new Error('Timed out to wait email with code')
+  }
+
+  private async chooseProxy(): Promise<string> {
+    try {
+      const response = await fetch(this.proxyList)
+      const proxies = await response.json() as string[]
+      const proxy = proxies[Math.floor(Math.random() * proxies.length)]
+      if (!proxy) throw new Error(`Proxy is undefined or empty string: ${proxy}`)
+      return proxy
+    } catch (e) {
+      console.error('Failed to choose proxy')
+      throw e
+    }
   }
 }
