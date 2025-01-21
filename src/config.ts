@@ -3,16 +3,19 @@ export type Config = {
   placeCountNotification?: {
     freq: string,
     consumers: URL[]
-  }
+  },
+  proxyList: URL
 }
 
 export const loadConfig = (): Config => {
   const {
     SELENIUM_SERVER,
     PLACE_COUNT_NOTIFICATIONS_FREQ,
-    PLACE_COUNT_NOTIFICATIONS_URLS
+    PLACE_COUNT_NOTIFICATIONS_URLS,
+    PROXY_LIST_URL
   } = process.env
   if (!SELENIUM_SERVER) throw new Error('SELENIUM_SERVER is undefined')
+  if (!PROXY_LIST_URL) throw new Error('PROXY_LIST_URL is undefined')
   const optionalPart: Partial<Config> = PLACE_COUNT_NOTIFICATIONS_FREQ
     ? {
       placeCountNotification: {
@@ -23,6 +26,7 @@ export const loadConfig = (): Config => {
     : {}
   return {
     seleniumServer: new URL(SELENIUM_SERVER),
+    proxyList: new URL(PROXY_LIST_URL),
     ...optionalPart
   }
 }

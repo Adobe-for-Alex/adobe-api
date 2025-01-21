@@ -2,6 +2,8 @@ import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
 import { Options } from "selenium-webdriver/chrome"
 import { Token } from "./aliases"
+import { HttpsProxyAgent } from "https-proxy-agent"
+import axios from "axios"
 
 class Eyes {
   private index = 0
@@ -29,6 +31,7 @@ class Eyes {
 export default class Selenium {
   constructor(
     public readonly serverUrl: URL,
+    public readonly proxyList: URL
   ) { }
 
   async login(email: string, password: string): Promise<Token> {
@@ -160,6 +163,8 @@ export default class Selenium {
   }
 
   private async browser(): Promise<WebDriver> {
+    const proxy = await this.chooseProxy()
+    console.log('Proxy used for new browser:', proxy)
     const options = new Options()
     options.setUserPreferences({
       'profile.default_content_setting_values.images': 2
@@ -170,6 +175,11 @@ export default class Selenium {
       '--disable-infobars',
       '--disable-automation',
     )
+    options.setProxy({
+      proxyType: 'manual',
+      httpProxy: proxy,
+      sslProxy: proxy
+    })
     const browser = new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
@@ -234,5 +244,33 @@ export default class Selenium {
       return match[0]
     }
     throw new Error('Timed out to wait email with code')
+  }
+
+  private async chooseProxy(): Promise<string> {
+    try {
+      const response = await fetch(this.proxyList)
+      const proxies = await response.json() as string[]
+      const validProxies = (await Promise.all(proxies.map(x => `http://${x}`).map(async proxy => {
+        const agent = new HttpsProxyAgent(proxy, { timeout: 500 })
+        try {
+          await axios.get('http://ipinfo.io', {
+            httpAgent: agent,
+            httpsAgent: agent,
+            timeout: 500,
+          })
+          console.log(`Proxy ${proxy} is valid`)
+          return proxy
+        } catch (e) {
+          console.log(`Proxy ${proxy} failed ${e}`)
+          return undefined
+        }
+      }))).filter(x => x !== undefined)
+      const firstValidProxy = validProxies[0]
+      if (firstValidProxy === undefined) throw new Error(`No valid proxies in ${proxies.join(', ')}`)
+      return firstValidProxy
+    } catch (e) {
+      console.error('Failed to choose proxy')
+      throw e
+    }
   }
 }
