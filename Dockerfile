@@ -11,6 +11,7 @@ COPY node_modules node_modules
 COPY package.json pnpm-lock.yaml tsconfig.json ./
 COPY prisma prisma
 COPY src src
+RUN pnpm install --production --ignore-scripts
 RUN pnpx prisma generate
 RUN pnpm build
 
