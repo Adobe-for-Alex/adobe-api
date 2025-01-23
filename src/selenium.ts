@@ -243,12 +243,14 @@ export default class Selenium {
       const response = await fetch(this.proxyList)
       const proxies = await response.json() as string[]
       const validProxies = (await Promise.all(proxies.map(async proxy => {
-        const agent = new HttpsProxyAgent(`http://${proxy}`, { timeout: 500 })
         try {
+          const agent = new HttpsProxyAgent(`http://${proxy}`, { timeout: 500 })
+          const controller = new AbortController()
+          setTimeout(() => controller.abort(), 700)
           await axios.get('http://ipinfo.io', {
             httpAgent: agent,
             httpsAgent: agent,
-            timeout: 500,
+            signal: controller.signal,
           })
           console.log(`Proxy ${proxy} is valid`)
           return proxy
