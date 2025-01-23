@@ -39,13 +39,13 @@ export default class Selenium {
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')))
+      await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')), 60_000)
       await eyes.look()
       const emailInput = await browser.findElement(By.id('EmailPage-EmailField'))
       await emailInput.sendKeys(email, Key.ENTER)
 
       await eyes.look()
-      await browser.wait(until.stalenessOf(emailInput))
+      await browser.wait(until.stalenessOf(emailInput), 30_000)
       if (await browser.findElements(By.id('PasswordPage-PasswordField')).then(x => x.length) == 0) {
         let mailCodeTries = 2
         while (mailCodeTries--) {
@@ -66,7 +66,7 @@ export default class Selenium {
           }
 
           await eyes.look()
-          await browser.wait(until.elementLocated(By.css('*[data-id="CodeInput-0"]')))
+          await browser.wait(until.elementLocated(By.css('*[data-id="CodeInput-0"]')), 30_000)
           await eyes.look()
           const codeInput = await browser.findElement(By.css('*[data-id="CodeInput-0"]'))
           await codeInput.sendKeys(code)
@@ -78,23 +78,23 @@ export default class Selenium {
       }
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.id('PasswordPage-PasswordField')))
+      await browser.wait(until.elementLocated(By.id('PasswordPage-PasswordField')), 30_000)
       await eyes.look()
       const passwordInput = await browser.findElement(By.id('PasswordPage-PasswordField'))
       await passwordInput.sendKeys(password, Key.ENTER)
 
       await eyes.look()
-      await browser.wait(until.stalenessOf(passwordInput))
+      await browser.wait(until.stalenessOf(passwordInput), 30_000)
       while ((await browser.findElements(By.css('*[data-id$="-skip-btn"]'))).length > 0) {
         await eyes.look()
         const skipButton = await browser.findElement(By.css('*[data-id$="-skip-btn"]'))
         await skipButton.click()
-        await browser.wait(until.stalenessOf(skipButton))
+        await browser.wait(until.stalenessOf(skipButton), 30_000)
       }
       await eyes.look()
 
-      await browser.wait(until.urlContains('https://adminconsole.adobe.com'))
-      await browser.wait(until.elementLocated(By.css('button')))
+      await browser.wait(until.urlContains('https://adminconsole.adobe.com'), 30_000)
+      await browser.wait(until.elementLocated(By.css('button')), 30_000)
       await eyes.look()
       return await this.extractToken(browser)
     })
