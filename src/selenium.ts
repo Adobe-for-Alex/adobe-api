@@ -1,6 +1,6 @@
 import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
-import { Options } from "selenium-webdriver/chrome"
+import { Options as FirefoxOptions } from "selenium-webdriver/firefox"
 import { Token } from "./aliases"
 import { HttpsProxyAgent } from "https-proxy-agent"
 import axios from "axios"
@@ -102,7 +102,7 @@ export default class Selenium {
 
   async register(email: string, password: string): Promise<Token> {
     return await this.inSession(`./screenshots/${new Date().toISOString()}-register-${email}`, async (browser, eyes) => {
-      await browser.get('https://adminconsole.adobe.com')
+      await this.getPageWithoutWebDriverFlag(browser, 'https://adminconsole.adobe.com')
 
       await eyes.look()
       await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-CreateAccountLink"]')))
@@ -165,27 +165,19 @@ export default class Selenium {
   private async browser(): Promise<WebDriver> {
     const proxy = await this.chooseProxy()
     console.log('Proxy used for new browser:', proxy)
-    const options = new Options()
-    options.setUserPreferences({
-      'profile.default_content_setting_values.images': 2
-    })
-    options.addArguments(
-      '--window-size=1920,1080',
-      '--disable-blink-features=AutomationControlled',
-      '--disable-infobars',
-      '--disable-automation',
-    )
-    options.setProxy({
-      proxyType: 'manual',
-      httpProxy: proxy,
-      sslProxy: proxy
-    })
+    const options = new FirefoxOptions()
+      .setPreference('marionette.enabled', false)
+      .setPreference('permissions.default.image', 2)
+      .setProxy({
+        proxyType: 'manual',
+        httpProxy: proxy,
+        sslProxy: proxy
+      }) as FirefoxOptions
     const browser = new Builder()
-      .forBrowser(Browser.CHROME)
-      .setChromeOptions(options)
+      .forBrowser(Browser.FIREFOX)
+      .setFirefoxOptions(options)
       .usingServer(this.serverUrl.toString())
       .build()
-    await browser.executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     return browser
   }
 
@@ -250,8 +242,8 @@ export default class Selenium {
     try {
       const response = await fetch(this.proxyList)
       const proxies = await response.json() as string[]
-      const validProxies = (await Promise.all(proxies.map(x => `http://${x}`).map(async proxy => {
-        const agent = new HttpsProxyAgent(proxy, { timeout: 500 })
+      const validProxies = (await Promise.all(proxies.map(async proxy => {
+        const agent = new HttpsProxyAgent(`http://${proxy}`, { timeout: 500 })
         try {
           await axios.get('http://ipinfo.io', {
             httpAgent: agent,
@@ -272,5 +264,37 @@ export default class Selenium {
       console.error('Failed to choose proxy')
       throw e
     }
+  }
+
+  private async getPageWithoutWebDriverFlag(browser: WebDriver, url: string): Promise<void> {
+    const load = browser.get(url)
+    // https://github.com/microsoft/playwright-python/issues/527#issuecomment-1846318431
+    const fix = browser.executeScript(`
+const defaultGetter = Object.getOwnPropertyDescriptor(
+  Navigator.prototype,
+  "webdriver"
+).get;
+defaultGetter.apply(navigator);
+defaultGetter.toString();
+Object.defineProperty(Navigator.prototype, "webdriver", {
+  set: undefined,
+  enumerable: true,
+  configurable: true,
+  get: new Proxy(defaultGetter, {
+    apply: (target, thisArg, args) => {
+      Reflect.apply(target, thisArg, args);
+      return false;
+    },
+  }),
+});
+const patchedGetter = Object.getOwnPropertyDescriptor(
+  Navigator.prototype,
+  "webdriver"
+).get;
+patchedGetter.apply(navigator);
+patchedGetter.toString();`)
+    const result = await load
+    await fix
+    return result
   }
 }
