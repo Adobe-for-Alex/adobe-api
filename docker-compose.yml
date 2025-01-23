@@ -31,7 +31,7 @@ services:
     ports:
       - '8000:8080'
   browser:
-    image: selenium/standalone-chrome:130.0
+    image: selenium/standalone-firefox:134.0.2-geckodriver-0.35.0-grid-4.28.0-20250120
     restart: always
     ports:
       - 4444:4444
