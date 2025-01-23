@@ -105,12 +105,12 @@ export default class Selenium {
       await this.getPageWithoutWebDriverFlag(browser, 'https://adminconsole.adobe.com')
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-CreateAccountLink"]')))
+      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-CreateAccountLink"]')), 60_000)
       await eyes.look()
       await browser.findElement(By.css('*[data-id="EmailPage-CreateAccountLink"]')).then(x => x.click())
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-EmailField"]')))
+      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-EmailField"]')), 30_000)
       await eyes.look()
       const emailInput = await browser.findElement(By.css('*[data-id="Signup-EmailField"]'))
       const passwordInput = await browser.findElement(By.css('*[data-id="Signup-PasswordField"]'))
@@ -118,13 +118,13 @@ export default class Selenium {
       await passwordInput.sendKeys(password)
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.css('*[data-id="PasswordStrengthRule-notCommonlyUsed"] img[src="/img/generic/check.svg"]')))
+      await browser.wait(until.elementLocated(By.css('*[data-id="PasswordStrengthRule-notCommonlyUsed"] img[src="/img/generic/check.svg"]')), 10_000)
       await eyes.look()
       const continueButton = await browser.findElement(By.css('*[data-id="Signup-CreateAccountBtn"]'))
       await continueButton.click()
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-FirstNameField"]')), 10000)
+      await browser.wait(until.elementLocated(By.css('*[data-id="Signup-FirstNameField"]')), 30_000)
       await eyes.look()
       const firstNameInput = await browser.findElement(By.css('*[data-id="Signup-FirstNameField"]'))
       const lastNameInput = await browser.findElement(By.css('*[data-id="Signup-LastNameField"]'))
@@ -134,8 +134,8 @@ export default class Selenium {
       await createAccountButton.click()
 
       await eyes.look()
-      await browser.wait(until.urlContains('https://adminconsole.adobe.com'))
-      await browser.wait(until.elementLocated(By.css('button')))
+      await browser.wait(until.urlContains('https://adminconsole.adobe.com'), 30_000)
+      await browser.wait(until.elementLocated(By.css('button')), 30_000)
       await eyes.look()
       return await this.extractToken(browser)
     })
