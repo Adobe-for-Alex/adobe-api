@@ -40,6 +40,7 @@ export default class Selenium {
 
       await eyes.look()
       await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')), 30_000)
+      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-ContinueButton"]')), 30_000)
       await eyes.look()
       const emailInput = await browser.findElement(By.id('EmailPage-EmailField'))
       await emailInput.sendKeys(email)
@@ -82,6 +83,7 @@ export default class Selenium {
 
       await eyes.look()
       await browser.wait(until.elementLocated(By.id('PasswordPage-PasswordField')), 30_000)
+      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-ContinueButton"]')), 30_000)
       await eyes.look()
       const passwordInput = await browser.findElement(By.id('PasswordPage-PasswordField'))
       await passwordInput.sendKeys(password)
