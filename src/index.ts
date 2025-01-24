@@ -148,6 +148,7 @@ if (!config.placeCountNotification) {
     }
     console.log('Start check free places process')
     try {
+      checkFreePlacesIsRunning = true
       console.log('Check free places: Update admin tokens')
       await updateAdminTokens(selenium, prisma)
 
