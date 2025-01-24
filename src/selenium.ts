@@ -1,4 +1,4 @@
-import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
+import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
 import { Options as FirefoxOptions } from "selenium-webdriver/firefox"
 import { Token } from "./aliases"
@@ -39,10 +39,12 @@ export default class Selenium {
       await browser.get('https://adminconsole.adobe.com')
 
       await eyes.look()
-      await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')), 60_000)
+      await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')), 30_000)
       await eyes.look()
       const emailInput = await browser.findElement(By.id('EmailPage-EmailField'))
-      await emailInput.sendKeys(email, Key.ENTER)
+      await emailInput.sendKeys(email)
+      const emailInputNextButton = await browser.findElement(By.css('*[data-id="EmailPage-ContinueButton"]'))
+      await emailInputNextButton.click()
 
       await eyes.look()
       await browser.wait(until.stalenessOf(emailInput), 30_000)
@@ -50,7 +52,8 @@ export default class Selenium {
         let mailCodeTries = 2
         while (mailCodeTries--) {
           await eyes.look()
-          const nextButton = await browser.findElement(By.css('.CardLayout .spectrum-Button'))
+          await browser.wait(until.elementLocated(By.css('*[data-id="Page-PrimaryButton"]')), 30_000)
+          const nextButton = await browser.findElement(By.css('*[data-id="Page-PrimaryButton"]'))
           await nextButton.click()
 
           if (await browser.findElements(By.css('*[data-id="ErrorPage-Title"]')).then(x => x.length) > 0)
@@ -81,7 +84,9 @@ export default class Selenium {
       await browser.wait(until.elementLocated(By.id('PasswordPage-PasswordField')), 30_000)
       await eyes.look()
       const passwordInput = await browser.findElement(By.id('PasswordPage-PasswordField'))
-      await passwordInput.sendKeys(password, Key.ENTER)
+      await passwordInput.sendKeys(password)
+      const passwordInputNextButton = await browser.findElement(By.css('*[data-id="PasswordPage-ContinueButton"]'))
+      await passwordInputNextButton.click()
 
       await eyes.look()
       await browser.wait(until.stalenessOf(passwordInput), 30_000)
