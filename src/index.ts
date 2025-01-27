@@ -177,6 +177,8 @@ if (!config.placeCountNotification) {
     } finally {
       checkFreePlacesIsRunning = false
     }
+  }, {
+    runOnInit: true
   })
 }
 
