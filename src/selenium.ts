@@ -1,4 +1,4 @@
-import { Browser, Builder, By, until, WebDriver } from "selenium-webdriver"
+import { Browser, Builder, By, Key, until, WebDriver } from "selenium-webdriver"
 import fs from 'fs/promises'
 import { Options as FirefoxOptions } from "selenium-webdriver/firefox"
 import { Token } from "./aliases"
@@ -36,16 +36,15 @@ export default class Selenium {
 
   async login(email: string, password: string): Promise<Token> {
     return await this.inSession(`./screenshots/${new Date().toISOString()}-login-${email}`, async (browser, eyes) => {
-      await browser.get('https://adminconsole.adobe.com')
+      await this.getPageWithoutWebDriverFlag(browser, 'https://adminconsole.adobe.com')
 
       await eyes.look()
       await browser.wait(until.elementLocated(By.id('EmailPage-EmailField')), 30_000)
-      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-ContinueButton"]')), 30_000)
+      await eyes.look()
+      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-Toaster"]')), 30_000)
       await eyes.look()
       const emailInput = await browser.findElement(By.id('EmailPage-EmailField'))
-      await emailInput.sendKeys(email)
-      const emailInputNextButton = await browser.findElement(By.css('*[data-id="EmailPage-ContinueButton"]'))
-      await emailInputNextButton.click()
+      await emailInput.sendKeys(email, Key.ENTER)
 
       await eyes.look()
       await browser.wait(until.stalenessOf(emailInput), 30_000)
@@ -83,12 +82,9 @@ export default class Selenium {
 
       await eyes.look()
       await browser.wait(until.elementLocated(By.id('PasswordPage-PasswordField')), 30_000)
-      await browser.wait(until.elementLocated(By.css('*[data-id="EmailPage-ContinueButton"]')), 30_000)
       await eyes.look()
       const passwordInput = await browser.findElement(By.id('PasswordPage-PasswordField'))
-      await passwordInput.sendKeys(password)
-      const passwordInputNextButton = await browser.findElement(By.css('*[data-id="PasswordPage-ContinueButton"]'))
-      await passwordInputNextButton.click()
+      await passwordInput.sendKeys(password, Key.ENTER)
 
       await eyes.look()
       await browser.wait(until.stalenessOf(passwordInput), 30_000)
