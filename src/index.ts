@@ -7,6 +7,7 @@ import { LicenseGroupId, OrganizationId, ProductId, Token, UserId } from './alia
 import cron from 'node-cron'
 import { loadConfig } from './config'
 import { inspect } from 'util'
+import { DynamicProxyList } from './proxy/DynamicProxyList'
 
 const config = loadConfig()
 console.log('Config', inspect(config, {
@@ -15,7 +16,14 @@ console.log('Config', inspect(config, {
   numericSeparator: true
 }))
 
-const selenium = new Selenium(config.seleniumServer, config.proxyList)
+const selenium = new Selenium(
+  config.seleniumServer,
+  new DynamicProxyList(
+    config.proxy.list,
+    config.proxy.test.url,
+    config.proxy.test.timeout
+  )
+)
 const prisma = new PrismaClient()
 const app = express().use(express.json())
 
