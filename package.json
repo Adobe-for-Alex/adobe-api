@@ -4,8 +4,7 @@
   "description": "Это микросервис предоставляющий REST-подобное API для ограниченного фукнционала Adobe",
   "main": "./src/index.ts",
   "scripts": {
-    "preinstall": "only-allow pnpm && cp .env.template .env",
-    "postinstall": "pnpm dev:up && pnpm prisma:migrate:apply; pnpm dev:down",
+    "preinstall": "npx only-allow pnpm",
     "prisma:migrate:new": "prisma migrate dev --create-only",
     "prisma:migrate:apply": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
